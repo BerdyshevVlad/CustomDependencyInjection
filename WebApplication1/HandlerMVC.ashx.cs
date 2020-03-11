@@ -18,23 +18,10 @@ namespace WebApplication1
         public void ProcessRequest(HttpContext context)
         {
             context.Response.ContentType = "text/plain";
-            var queryString = context.Request.QueryString;
-            string controller = string.Empty;
-            string action = string.Empty;
-            foreach (string key in queryString.AllKeys)
-            {
-                if (key == "controller")
-                {
-                    var route = context.Request.QueryString[key];
-                    controller = MyRouteManager.Routes[route];
 
-
-                }
-                if (key == "action")
-                {
-                    action = context.Request.QueryString[key];
-                }
-            }
+            var route = context.Request.QueryString["controller"];
+            var controller = MyRouteManager.Routes[route];
+            var action = context.Request.QueryString["action"];
 
             Type controllerType = Type.GetType($"WebApplication1.{controller}Controller", false, false);
 
@@ -42,31 +29,29 @@ namespace WebApplication1
             .GetConstructors()
             .FirstOrDefault(c => c.GetParameters().Length > 0).GetParameters();
 
-            Type serviceType = null;
-            object serviceInstance = null;
-            Type serviceRealization = null;
-            foreach (var parameter in ctorControllerParameters)
-            {
-                serviceType = parameter.ParameterType;
-
-                serviceRealization = DiManager.Injections[serviceType];
-            }
+            var serviceRealization = GetRealization(ctorControllerParameters);
 
             var ctorServiceParameters = serviceRealization
+                .SelectMany(x => x.GetConstructors().FirstOrDefault(c => c.GetParameters().Length > 0).GetParameters()).ToArray();
+
+            List<object> serviceInstances = new List<object>();
+            foreach (var realization in serviceRealization)
+            {
+                var ctorParams = realization
                     .GetConstructors()
                     .FirstOrDefault(c => c.GetParameters().Length > 0).GetParameters();
 
-            object repositoryInstance = null;
-            foreach (var parameter in ctorServiceParameters)
-            {
-                var repositoryType = parameter.ParameterType;
+                var repositoriesRealization = GetRealization(ctorServiceParameters);
+                List<object> repositories = new List<object>();
+                foreach (var repositoryRealization in repositoriesRealization)
+                {
+                    repositories.Add(Activator.CreateInstance(repositoryRealization));
+                }
 
-                var realization = DiManager.Injections[repositoryType];
-                repositoryInstance = Activator.CreateInstance(realization);
+                serviceInstances.Add(Activator.CreateInstance(realization, repositories.ToArray()));
             }
 
-            serviceInstance = Activator.CreateInstance(serviceRealization, new object[] { repositoryInstance });
-            var controllerInstance = Activator.CreateInstance(controllerType, new object[] { serviceInstance });
+            var controllerInstance = Activator.CreateInstance(controllerType, serviceInstances.ToArray());
 
             var method = controllerType.GetMethod(action);
             var result = method.Invoke(controllerInstance, null);
@@ -85,6 +70,19 @@ namespace WebApplication1
             {
                 return false;
             }
+        }
+
+        public List<Type> GetRealization(ParameterInfo[] parameters)
+        {
+            List<Type> realizations = new List<Type>();
+            foreach (var parameter in parameters)
+            {
+                var serviceType = parameter.ParameterType;
+
+                realizations.Add(DiManager.Injections[serviceType]);
+            }
+
+            return realizations;
         }
     }
 }
