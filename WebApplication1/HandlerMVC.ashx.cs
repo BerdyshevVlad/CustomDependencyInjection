@@ -31,24 +31,29 @@ namespace WebApplication1
 
             var serviceRealization = GetRealization(ctorControllerParameters);
 
+
             var ctorServiceParameters = serviceRealization
-                .SelectMany(x => x.GetConstructors().FirstOrDefault(c => c.GetParameters().Length > 0).GetParameters()).ToArray();
+                .Where(x => x.GetConstructors().FirstOrDefault(c => c.GetParameters().Length > 0)?.GetParameters() != null)
+                .SelectMany(x => x.GetConstructors().FirstOrDefault(c => c.GetParameters().Length > 0)?.GetParameters()).ToArray();
 
             List<object> serviceInstances = new List<object>();
             foreach (var realization in serviceRealization)
             {
-                var ctorParams = realization
+                var ctorServiceParams = realization
                     .GetConstructors()
-                    .FirstOrDefault(c => c.GetParameters().Length > 0).GetParameters();
+                    .FirstOrDefault(c => c.GetParameters().Length > 0)?.GetParameters();
 
-                var repositoriesRealization = GetRealization(ctorServiceParameters);
                 List<object> repositories = new List<object>();
-                foreach (var repositoryRealization in repositoriesRealization)
+                if (ctorServiceParams != null)
                 {
-                    repositories.Add(Activator.CreateInstance(repositoryRealization));
+                    var repositoriesRealization = GetRealization(ctorServiceParams);
+                    foreach (var repositoryRealization in repositoriesRealization)
+                    {
+                        repositories.Add(Activator.CreateInstance(repositoryRealization));
+                    }
                 }
 
-                serviceInstances.Add(Activator.CreateInstance(realization, repositories.ToArray()));
+                serviceInstances.Add(Activator.CreateInstance(realization, repositories?.ToArray()));
             }
 
             var controllerInstance = Activator.CreateInstance(controllerType, serviceInstances.ToArray());

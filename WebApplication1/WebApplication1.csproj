@@ -75,6 +75,7 @@
     <Compile Include="Contracts\IRepository.cs" />
     <Compile Include="Contracts\IOrdersService.cs" />
     <Compile Include="Contracts\IProductsService.cs" />
+    <Compile Include="Contracts\IUserService.cs" />
     <Compile Include="DI\DiManager.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -85,6 +86,7 @@
     <Compile Include="Implementations\Repository.cs" />
     <Compile Include="Implementations\OrdersService.cs" />
     <Compile Include="Implementations\ProductsService.cs" />
+    <Compile Include="Implementations\UserService.cs" />
     <Compile Include="IndexController.cs" />
     <Compile Include="OrdersController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

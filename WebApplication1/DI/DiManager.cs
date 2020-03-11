@@ -14,6 +14,7 @@ namespace WebApplication1.DI
             Injections.Add(typeof(IRepository), typeof(Repository));
             Injections.Add(typeof(IProductsService), typeof(ProductsService));
             Injections.Add(typeof(IOrdersService), typeof(OrdersService));
+            Injections.Add(typeof(IUserService), typeof(UserService));
         }
     }
 }
